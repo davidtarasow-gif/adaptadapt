@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Adapt Style Chat Overlay</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/tmi.js@1.8.5/dist/tmi.min.js"></script>
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+body{
+  overflow:hidden;
+  background:transparent;
+  font-family:'Montserrat',sans-serif;
+}
+#chat{
+  position:absolute;
+  top:20px;
+  left:20px;
+  width:750px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.message{
+  opacity:0;
+  transform:translateY(10px);
+  animation:
+  show .22s forwards,
+  hide .4s forwards 18s;
+}
+.row{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.badge{
+  width:20px;
+  height:20px;
+  filter:
+  drop-shadow(0 0 4px rgba(0,0,0,.8))
+  drop-shadow(0 2px 4px rgba(0,0,0,.9));
+}
+.username{
+  font-size:22px;
+  font-weight:900;
+  color:white;
+  letter-spacing:-0.4px;
+  text-shadow:
+  0 2px 0 rgba(0,0,0,.95),
+  0 0 8px rgba(0,0,0,.95),
+  0 0 18px rgba(0,0,0,.8);
+}
+.vip{
+  background:linear-gradient(
+    90deg,
+    #59d0ff,
+    #8f7cff,
+    #ff6bd9,
+    #59d0ff
+  );
+  background-size:300% 100%;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:gradient 3s linear infinite;
+  filter:drop-shadow(0 0 8px rgba(156,124,255,.7));
+}
+.mod{
+  color:#57ff98;
+}
+.text{
+  font-size:22px;
+  font-weight:900;
+  color:white;
+  line-height:1.1;
+  text-shadow:
+  0 2px 0 rgba(0,0,0,.95),
+  0 0 8px rgba(0,0,0,.95),
+  0 0 18px rgba(0,0,0,.8);
+}
+.emote{
+  width:32px;
+  height:32px;
+  transform:translateY(7px);
+}
+@keyframes show{
+  to{
+    opacity:1;
+    transform:translateY(0px);
+  }
+}
+@keyframes hide{
+  to{
+    opacity:0;
+    transform:translateY(-10px);
+  }
+}
+@keyframes gradient{
+  0%{
+    background-position:0%;
+  }
+  100%{
+    background-position:100%;
+  }
+}
+</style>
+</head>
+<body>
+<div id="chat"></div>
+<script>
+const chat = document.getElementById('chat');
+function createBadge(url){
+  const img = document.createElement('img');
+  img.className = 'badge';
+  img.src = url;
+  return img;
+}
+function parseEmotes(text){
+  return text
+  .replaceAll(
+    'WWW',
+    '<img class="emote" src="https://static-cdn.jtvnw.net/emoticons/v2/emotesv2_6415e9b3a4d94cf5b2fcb1c08e4cba07/default/dark/3.0">'
+  )
+  .replaceAll(
+    'LUL',
+    '<img class="emote" src="https://static-cdn.jtvnw.net/emoticons/v2/425618/default/dark/3.0">'
+  );
+}
+function addMessage(user,text,badges={}){
+  const msg = document.createElement('div');
+  msg.className = 'message';
+  const row = document.createElement('div');
+  row.className = 'row';
+  // VIP BADGE
+  if(badges.vip){
+    row.appendChild(
+      createBadge(
+        'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e8-b88a-7cc744dfa6ec/3'
+      )
+    );
+  }
+  // MOD BADGE
+  if(badges.moderator){
+    row.appendChild(
+      createBadge(
+        'https://static-cdn.jtvnw.net/badges/v1/f1c3c6f3-9f87-4f84-8e69-6d8bf8e7544b/3'
+      )
+    );
+  }
+  // BROADCASTER BADGE
+  if(badges.broadcaster){
+    row.appendChild(
+      createBadge(
+        'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3'
+      )
+    );
+  }
+  // USERNAME
+  const username = document.createElement('span');
+  username.className = 'username';
+  if(badges.vip){
+    username.classList.add('vip');
+  }
+  if(badges.moderator){
+    username.classList.add('mod');
+  }
+  username.innerText = user + ':';
+  // MESSAGE
+  const message = document.createElement('span');
+  message.className = 'text';
+  message.innerHTML = parseEmotes(text);
+  row.appendChild(username);
+  row.appendChild(message);
+  msg.appendChild(row);
+  chat.appendChild(msg);
+  // LIMIT
+  while(chat.children.length > 8){
+    chat.removeChild(chat.firstChild);
+  }
+  // REMOVE
+  setTimeout(()=>{
+    msg.remove();
+  },18000);
+}
+// TWITCH CHAT CONNECTION
+const client = new tmi.Client({
+  channels:['savedatsaint']
+});
+client.connect();
+client.on('message',(channel,tags,text,self)=>{
+  addMessage(
+    tags['display-name'] || 'user',
+    text,
+    tags.badges || {}
+  );
+});
+// DEMO MESSAGE
+setTimeout(()=>{
+  addMessage(
+    'savedatsaint',
+    'WWW Overlay connected',
+    {
+      broadcaster:true
+    }
+  );
+},1000);
+</script>
+</body>
+</html>;
